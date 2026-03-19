@@ -154,12 +154,14 @@ async def compute_statistics(request: StatisticsRequest):
     }
 
 
+class HallucinationCheckRequest(BaseModel):
+    context_chunks: list[str]
+    response: str
+
+
 @router.post("/hallucination-check")
-async def check_hallucination(
-    context_chunks: list[str],
-    response: str,
-):
-    features = engineer_hallucination_reduction_features(context_chunks, response)
+async def check_hallucination(request: HallucinationCheckRequest):
+    features = engineer_hallucination_reduction_features(request.context_chunks, request.response)
     return {
         "reliability_score": features["reliability_score"],
         "numeric_overlap_ratio": features["numeric_overlap_ratio"],

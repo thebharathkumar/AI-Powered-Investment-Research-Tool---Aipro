@@ -75,6 +75,13 @@ def moving_average(values: list[float], window: int) -> list[Optional[float]]:
 
 
 def growth_rate_yoy(current: float, prior: float) -> Optional[float]:
+    """Compute year-over-year growth rate as a percentage.
+
+    Uses the absolute value of *prior* as the denominator so that the sign
+    of the result correctly reflects the direction of change even when the
+    base period value is negative (e.g. a prior-period loss turning into a
+    profit).  Returns ``None`` when *prior* is zero to avoid division by zero.
+    """
     if prior == 0:
         return None
     return round((current - prior) / abs(prior) * 100, 2)

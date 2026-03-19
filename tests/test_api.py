@@ -79,8 +79,10 @@ class TestAnalysisEndpoints:
     def test_hallucination_check_endpoint(self, client):
         resp = client.post(
             "/api/v1/analysis/hallucination-check",
-            params={"response": "Based on the filing, revenue was $100 million."},
-            json=["Revenue was $100 million in Q3 2023"],
+            json={
+                "context_chunks": ["Revenue was $100 million in Q3 2023"],
+                "response": "Based on the filing, revenue was $100 million.",
+            },
         )
         assert resp.status_code == 200
         data = resp.json()
