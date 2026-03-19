@@ -1,0 +1,123 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Description: AI-Powered Investment Research Tool - AWS Infrastructure
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues: [development, staging, production]
+
+  DBPassword:
+    Type: String
+    NoEcho: true
+    Description: RDS PostgreSQL password
+
+  OpenAIApiKey:
+    Type: String
+    NoEcho: true
+    Description: OpenAI API key
+
+  SubnetIds:
+    Type: CommaDelimitedList
+    Description: Comma-separated list of subnet IDs for RDS
+
+  AnthropicApiKey:
+    Type: String
+    NoEcho: true
+    Description: Anthropic API key
+
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 1024
+    Runtime: python3.11
+    Environment:
+      Variables:
+        APP_ENV: !Ref Environment
+        OPENAI_API_KEY: !Ref OpenAIApiKey
+        ANTHROPIC_API_KEY: !Ref AnthropicApiKey
+
+Resources:
+  AiproVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub aipro-${Environment}-vpc
+
+  AiproS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub aipro-documents-${Environment}-${AWS::AccountId}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  AiproECRRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub aipro-${Environment}
+      ImageScanningConfiguration:
+        ScanOnPush: true
+
+  AiproECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub aipro-${Environment}-cluster
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+
+  AiproRDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for Aipro RDS
+      SubnetIds: !Ref SubnetIds
+
+  AiproRDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub aipro-${Environment}-postgres
+      DBInstanceClass: db.t3.medium
+      Engine: postgres
+      EngineVersion: "16"
+      MasterUsername: aipro
+      MasterUserPassword: !Ref DBPassword
+      DBName: aipro
+      StorageType: gp3
+      AllocatedStorage: 50
+      MultiAZ: !If [IsProd, true, false]
+      BackupRetentionPeriod: 7
+      DeletionProtection: !If [IsProd, true, false]
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, production]
+
+Outputs:
+  S3BucketName:
+    Value: !Ref AiproS3Bucket
+    Description: S3 bucket for document storage
+
+  ECRRepositoryUri:
+    Value: !GetAtt AiproECRRepo.RepositoryUri
+    Description: ECR repository URI for Docker images
+
+  ECSClusterName:
+    Value: !Ref AiproECSCluster
+    Description: ECS Cluster name
