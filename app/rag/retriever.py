@@ -1,5 +1,5 @@
 from langchain_community.vectorstores import Chroma
-from langchain.schema import Document as LCDocument
+from langchain_core.documents import Document as LCDocument
 from app.rag.embeddings import get_embeddings
 from app.config import get_settings
 

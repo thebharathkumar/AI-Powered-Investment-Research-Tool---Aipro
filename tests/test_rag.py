@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from langchain.schema import Document as LCDocument
+from langchain_core.documents import Document as LCDocument
 
 from app.rag.pipeline import chunk_document, get_text_splitter, FINANCIAL_RAG_PROMPT
 
@@ -39,10 +39,11 @@ class TestRAGPipeline:
 
     def test_financial_rag_prompt_has_required_vars(self):
         assert "context" in FINANCIAL_RAG_PROMPT.input_variables
-        assert "question" in FINANCIAL_RAG_PROMPT.input_variables
+        assert "input" in FINANCIAL_RAG_PROMPT.input_variables
 
     def test_financial_rag_prompt_no_fabrication_instruction(self):
-        assert (
-            "fabricate" in FINANCIAL_RAG_PROMPT.template.lower()
-            or "never" in FINANCIAL_RAG_PROMPT.template.lower()
+        full_text = " ".join(
+            msg.prompt.template.lower() if hasattr(msg, "prompt") else str(msg).lower()
+            for msg in FINANCIAL_RAG_PROMPT.messages
         )
+        assert "fabricate" in full_text or "never" in full_text

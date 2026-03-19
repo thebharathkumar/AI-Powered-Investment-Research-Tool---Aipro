@@ -4,9 +4,9 @@ from typing import Any, TypedDict, Annotated
 import operator
 
 from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage, SystemMessage
-from langchain.tools import Tool
-from langgraph.graph import StateGraph, END
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.tools import Tool
+from langgraph.graph import StateGraph, END, START
 
 from app.rag.pipeline import query_rag
 from app.config import get_settings
@@ -117,7 +117,7 @@ End with a confidence score (0.0-1.0) for your analysis based on available evide
     graph.add_node("retrieve", retrieve_node)
     graph.add_node("analyze", analyze_node)
 
-    graph.set_entry_point("retrieve")
+    graph.add_edge(START, "retrieve")
     graph.add_conditional_edges(
         "retrieve",
         should_continue,

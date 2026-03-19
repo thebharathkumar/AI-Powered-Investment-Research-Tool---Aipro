@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage, SystemMessage
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.rag.pipeline import ingest_document
 from app.config import get_settings
